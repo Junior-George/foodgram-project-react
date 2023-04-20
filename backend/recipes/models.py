@@ -35,7 +35,26 @@ class Tag(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return self.slug
+        return self.name
+
+
+class IngredientsInRecipe(models.Model):
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        verbose_name='Ингредиент',
+        related_name='ingredient'
+    )
+    amount = models.PositiveSmallIntegerField(
+        verbose_name='Количество'
+    )
+
+    class Meta:
+        verbose_name = 'Ингредиент в рецепте'
+        verbose_name_plural = 'Ингредиенты в рецептах'
+
+    def __str__(self):
+        return f'{self.ingredient.name} - {self.amount}'
 
 
 class Recipe(models.Model):
@@ -51,7 +70,7 @@ class Recipe(models.Model):
         upload_to='recipies/imgs/', blank=True
     )
     ingredients = models.ManyToManyField(
-        Ingredient, through='IngredientsInRecipe',
+        IngredientsInRecipe,
         verbose_name='Список ингредиентов'
     )
     text = models.TextField(max_length=250, verbose_name='Описания рецепта')
@@ -65,31 +84,10 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name[:72]
-    
+
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-
-
-class IngredientsInRecipe(models.Model):
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт'
-    )
-    ingredient = models.ForeignKey(
-        Ingredient,
-        on_delete=models.CASCADE,
-        verbose_name='Ингредиент',
-        related_name='ingredient'
-    )
-    amount = models.PositiveSmallIntegerField(
-        verbose_name='Количество'
-    )
-
-    class Meta:
-        verbose_name = 'Ингредиент в рецепте'
-        verbose_name_plural = 'Ингредиенты в рецептах'
 
 
 class Favorite(models.Model):

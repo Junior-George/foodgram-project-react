@@ -105,12 +105,11 @@ class RecipeSerializer(serializers.ModelSerializer):
             c_ing = get_object_or_404(
                 Ingredient, pk=ingredient['ingredient']['id']
             )
-            IngredientsInRecipe.objects.create(
-                recipe=recipe,
+            ing_rec, status = IngredientsInRecipe.objects.get_or_create(
                 amount=ingredient['amount'],
                 ingredient=c_ing
             )
-        print(validated_data)
+            recipe.ingredients.add(ing_rec.id)
         return recipe
 
     def update(self, instance, validated_data):
@@ -123,12 +122,11 @@ class RecipeSerializer(serializers.ModelSerializer):
             c_ing = get_object_or_404(
                 Ingredient, pk=ingredient['ingredient']['id']
             )
-            IngredientsInRecipe.objects.create(
-                recipe=instance,
+            ing_rec = IngredientsInRecipe.objects.create(
                 amount=ingredient['amount'],
                 ingredient=c_ing
             )
-        print(validated_data)
+            instance.ingredients.add(ing_rec.id)
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
@@ -175,13 +173,13 @@ class GetRecipeSerializer(serializers.ModelSerializer):
         if not request or request.user.is_anonymous:
             return False
         return model.objects.filter(user=request.user, recipe=obj).exists()
-
-    def get_is_favorited(self, obj):
+ 
+    def get_is_favorited(self, obj): 
         return self.is_object_exists(Favorite, obj)
 
     def get_is_in_shopping_cart(self, obj):
         return self.is_object_exists(ShoppingCart, obj)
-
+ 
     def get_ingredients(self, obj):
         ings = IngredientsInRecipe.objects.filter(recipe=obj).all()
         return IngredientInRecipeSerializer(ings, many=True).data

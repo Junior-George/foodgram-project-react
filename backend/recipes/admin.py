@@ -39,14 +39,14 @@ class TagsAdmin(admin.ModelAdmin):
     )
 
 
-class RecipeAdmin(admin.ModelAdmin):
-    inlines = (IngredientsInRecipeAdmin,)
-    empty_value_display = ('пусто')
+#class RecipeAdmin(admin.ModelAdmin):
+#    inlines = (IngredientsInRecipeAdmin,)
+#    empty_value_display = ('пусто')
 
 
 admin.site.register(Ingredient, IngredientsAdmin)
 admin.site.register(Tag, TagsAdmin)
-admin.site.register(Recipe, RecipeAdmin)
+admin.site.register(Recipe)
 admin.site.register(Favorite)
 admin.site.register(Follow)
 admin.site.register(ShoppingCart)
