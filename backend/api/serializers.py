@@ -1,11 +1,24 @@
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
-                            ShoppingCart, Tag)
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
+from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
+                            ShoppingCart, Tag)
 from users.models import Follow, User
+
+
+def add_ingredients(ingredients, obj):
+    for ingredient in ingredients:
+        c_ing = get_object_or_404(
+            Ingredient, pk=ingredient['ingredient']['id']
+        )
+        ing_rec, status = IngredientsInRecipe.objects.get_or_create(
+            amount=ingredient['amount'],
+            ingredient=c_ing
+        )
+        obj.ingredients.add(ing_rec.id)
+    return obj
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -101,15 +114,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
-        for ingredient in ingredients:
-            c_ing = get_object_or_404(
-                Ingredient, pk=ingredient['ingredient']['id']
-            )
-            ing_rec, status = IngredientsInRecipe.objects.get_or_create(
-                amount=ingredient['amount'],
-                ingredient=c_ing
-            )
-            recipe.ingredients.add(ing_rec.id)
+        add_ingredients(ingredients, recipe)
         return recipe
 
     def update(self, instance, validated_data):
@@ -118,15 +123,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         instance.tags.set(tags)
         ingredients = validated_data.pop('ingredients')
-        for ingredient in ingredients:
-            c_ing = get_object_or_404(
-                Ingredient, pk=ingredient['ingredient']['id']
-            )
-            ing_rec = IngredientsInRecipe.objects.create(
-                amount=ingredient['amount'],
-                ingredient=c_ing
-            )
-            instance.ingredients.add(ing_rec.id)
+        add_ingredients(ingredients, instance)
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
