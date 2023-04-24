@@ -4,25 +4,48 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
-                            ShoppingCart, Tag)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   RetrieveModelMixin)
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
+
+from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
+                            ShoppingCart, Tag)
 from users.models import Follow, User
 
 from .filters import RecipeFilter
 from .pagination import SubscriptionPagination
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (CustomUserCreateSerializer, CustomUserSerializer,
-                          FollowListSerializer, FollowSerializer,
-                          GetRecipeSerializer, IngredientSerializer,
-                          RecipeSerializer, ShopingCartCreateSerializer,
-                          TagSerializer)
+                          FavoriteSerializer, FollowListSerializer,
+                          FollowSerializer, GetRecipeSerializer,
+                          IngredientSerializer, RecipeSerializer,
+                          ShopingCartCreateSerializer, TagSerializer)
 
 
 class UserViewSet(UserViewSet):
+    queryset = User.objects.all()
+    pagination_class = SubscriptionPagination
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.action == "set_password":
+            return djoser.serializers.SetPasswordSerializer
+        elif self.action == "create":
+            return CustomUserCreateSerializer
+        else:
+            return CustomUserSerializer
+
+    def list(self, request):
+        queryset = User.objects.all()
+        serializer = CustomUserSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class FollowViewSet(UserViewSet):
     queryset = User.objects.all()
     pagination_class = SubscriptionPagination
     permission_classes = (IsAuthenticatedOrReadOnly,)
@@ -32,12 +55,6 @@ class UserViewSet(UserViewSet):
             return FollowSerializer
         elif self.action == 'subscriptions':
             return FollowListSerializer
-        elif self.action == "set_password":
-            return djoser.serializers.SetPasswordSerializer
-        elif self.action == "create":
-            return CustomUserCreateSerializer
-        else:
-            return CustomUserSerializer
 
     @action(detail=True, methods=['post', 'delete'])
     def subscribe(self, request, id):
@@ -59,15 +76,10 @@ class UserViewSet(UserViewSet):
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(
                 {"detail": "Страница не найдена"},
-                status=status.HTTP_404_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-    def list(self, request):
-        queryset = User.objects.all()
-        serializer = CustomUserSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-    @action(methods=['get'], detail=False)
+    @action(detail=False, methods=['get'])
     def subscriptions(self, request):
         queryset = User.objects.filter(following__user=self.request.user).all()
         page = self.paginate_queryset(queryset)
@@ -86,11 +98,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def get_serializer_class(self):
-        if self.action in ('favorite'):
-            return ShopingCartCreateSerializer
-        elif self.action in ('shopping_cart'):
-            return ShopingCartCreateSerializer
-        elif self.action in ('get', 'list'):
+        if self.action in ('get', 'list'):
             return GetRecipeSerializer
         else:
             return RecipeSerializer
@@ -101,32 +109,69 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer = GetRecipeSerializer(recipe, context={'request': request})
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post', 'delete'])
-    def favorite(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
-        user = request.user
-        if request.method == 'POST':
-            Favorite.objects.create(user=user, recipe=recipe)
-            queryset = Recipe.objects.get(pk=pk)
-            serializer = self.get_serializer_class()(queryset, many=False)
-            return Response(serializer.data)
-        else:
-            Favorite.objects.filter(user=user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['post', 'delete'])
-    def shopping_cart(self, request, pk):
-        user = request.user
-        recipe = get_object_or_404(Recipe, pk=pk)
-        if request.method == 'POST':
-            ShoppingCart.objects.create(user=user, recipe=recipe)
-            queryset = Recipe.objects.get(pk=pk)
-            serializer = self.get_serializer_class()(queryset, many=False)
-            return Response(serializer.data)
-        else:
-            ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+class FavoriteViewSet(CreateModelMixin,
+                      DestroyModelMixin,
+                      viewsets.GenericViewSet):
+    permission_classes = (IsAuthenticated, )
+    http_method_names = ['post', 'delete']
+    serializer_class = FavoriteSerializer
 
+    def get_queryset(self):
+        recipe_id = self.kwargs.get('recipe_id')
+        queryset = Favorite.objects.filter(
+            pk=recipe_id
+        )
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        recipe_id = self.kwargs.get('recipe_id')
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+        if request.method == 'POST':
+            Favorite.objects.create(user=self.request.user, recipe=recipe)
+            queryset = Recipe.objects.filter(pk=recipe_id)
+            print(queryset)
+            serializer = ShopingCartCreateSerializer(recipe, many=False)
+            return Response(serializer.data)
+
+    @action(
+            detail=False,
+            methods=['delete'],
+            permission_classes=[IsAuthenticated])
+    def delete(self, request, *args, **kwargs):
+        recipe_id = self.kwargs.get('recipe_id')
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+        Favorite.objects.filter(user=self.request.user, recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ShoppingCartViewSet(CreateModelMixin,
+                          DestroyModelMixin,
+                          RetrieveModelMixin,
+                          viewsets.GenericViewSet):
+    permission_classes = IsAuthenticated,
+    http_method_names = ['post', 'get', 'delete']
+    serializer_class = ShopingCartCreateSerializer
+
+    def create(self, request, *args, **kwargs):
+        recipe_id = self.kwargs.get('recipe_id')
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+        ShoppingCart.objects.create(user=self.request.user, recipe=recipe)
+        serializer = ShopingCartCreateSerializer(recipe, many=False)
+        return Response(serializer.data)
+
+    @action(
+            detail=False,
+            methods=['delete'],
+            permission_classes=[IsAuthenticated]
+    )
+    def delete(self, request, *args, **kwargs):
+        recipe_id = self.kwargs.get('recipe_id')
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+        ShoppingCart.objects.filter(
+            user=self.request.user, recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
     def send_message(self, ingredients):
         shopping_list = ''
         for ingredient in ingredients:
@@ -139,7 +184,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename="{file}"'
         return response
-
+    
     @action(detail=False, methods=['get'])
     def download_shopping_cart(self, request):
         ings = IngredientsInRecipe.objects.select_related(
@@ -159,7 +204,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).annotate(
             amount=Sum('amount')
         )
-        
         return self.send_message(ingredients)
 
 

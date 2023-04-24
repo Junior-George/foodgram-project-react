@@ -3,6 +3,7 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
+
 from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import Follow, User
@@ -119,7 +120,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.tags.clear()
-        IngredientsInRecipe.objects.filter(recipe=instance).delete()
         tags = validated_data.pop('tags')
         instance.tags.set(tags)
         ingredients = validated_data.pop('ingredients')
@@ -170,13 +170,13 @@ class GetRecipeSerializer(serializers.ModelSerializer):
         if not request or request.user.is_anonymous:
             return False
         return model.objects.filter(user=request.user, recipe=obj).exists()
- 
+
     def get_is_favorited(self, obj): 
         return self.is_object_exists(Favorite, obj)
 
     def get_is_in_shopping_cart(self, obj):
         return self.is_object_exists(ShoppingCart, obj)
- 
+
     def get_ingredients(self, obj):
         ings = IngredientsInRecipe.objects.filter(recipe=obj).all()
         return IngredientInRecipeSerializer(ings, many=True).data
@@ -251,3 +251,10 @@ class ShopingCartCreateSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('id', 'name', 'image', 'cooking_time')
         model = Recipe
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ()
+        model = Favorite
