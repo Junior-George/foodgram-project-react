@@ -1,25 +1,12 @@
-from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
+from utils import add_ingredients
 
 from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import Follow, User
-
-
-def add_ingredients(ingredients, obj):
-    for ingredient in ingredients:
-        c_ing = get_object_or_404(
-            Ingredient, pk=ingredient['ingredient']['id']
-        )
-        ing_rec, status = IngredientsInRecipe.objects.get_or_create(
-            amount=ingredient['amount'],
-            ingredient=c_ing
-        )
-        obj.ingredients.add(ing_rec.id)
-    return obj
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
