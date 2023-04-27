@@ -130,8 +130,7 @@ class FavoriteViewSet(CreateModelMixin,
         if request.method == 'POST':
             Favorite.objects.create(user=self.request.user, recipe=recipe)
             queryset = Recipe.objects.filter(pk=recipe_id)
-            print(queryset)
-            serializer = ShopingCartCreateSerializer(recipe, many=False)
+            serializer = ShopingCartCreateSerializer(queryset, many=False)
             return Response(serializer.data)
 
     @action(
@@ -171,7 +170,7 @@ class ShoppingCartViewSet(CreateModelMixin,
         ShoppingCart.objects.filter(
             user=self.request.user, recipe=recipe).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
     def send_message(self, ingredients):
         shopping_list = ''
         for ingredient in ingredients:
@@ -184,7 +183,7 @@ class ShoppingCartViewSet(CreateModelMixin,
         response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename="{file}"'
         return response
-    
+
     @action(detail=False, methods=['get'])
     def download_shopping_cart(self, request):
         ings = IngredientsInRecipe.objects.select_related(
