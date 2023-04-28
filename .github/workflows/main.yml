@@ -76,7 +76,7 @@ jobs:
         with:
           context: ./frontend
           push: true
-          tags: katerina23/frontend:v1
+          tags: norjunior/frontend:v1
 
   deploy:
     runs-on: ubuntu-latest
