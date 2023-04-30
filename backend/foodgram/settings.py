@@ -26,7 +26,7 @@ SECRET_KEY = 'gx2lv--xm1qaj0r!jp3gjczb*$xhk5hlal)#2s040c(pq2@k$q'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['130.193.34.121', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['158.160.20.69', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
     'api',
-    'foodgram',
     'rest_framework',
     'corsheaders',
     'django_filters',
@@ -68,7 +67,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
 ]
 
-ROOT_URLCONF = 'foodgram.urls'
+ROOT_URLCONF = 'oodgram.urls'
 
 TEMPLATES = [
     {
@@ -86,7 +85,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'foodgram.wsgi.application'
+WSGI_APPLICATION = 'oodgram.wsgi.application'
 
 
 # Database
