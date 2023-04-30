@@ -26,7 +26,7 @@ class User(AbstractUser):
         unique=True,
         verbose_name='Электронная почта',
     )
-    REQUIRED_FIELDS = ['password']
+    REQUIRED_FIELDS = ['password', 'username']
     USERNAME_FIELD = 'email'
 
     class Meta:
