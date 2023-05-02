@@ -53,24 +53,37 @@
 ### Сборка на локальном компьютере завершена! Теперь возвращаемся на удаленный сервер
 
 * Первым делом собираем контейнеры:
+
 sudo docker-compose up -d --build
 
 * Как только контейнеры соберутся, выполняем миграции:
+
 sudo docker-compose exec backend python manage.py makemigrations recipes
+
 sudo docker-compose exec backend python manage.py migrate --noinput
 
 * Создаем суперпользователя (но это не обязательно)
+
 sudo docker-compose exec backend python manage.py createsuperuser
 
 * Собираем статику:
+
 sudo docker-compose exec backend python manage.py collectstatic --no-input
 
 * На последок заполняем БД ингредиентами и тэгами:
+
 sudo docker-compose exec backend python manage.py add_tags
+
 sudo docker-compose exec backend python manage.py add_ings
 
 
-* * Ура! Наш сайт готов, и теперь вы можете опробовать его функционал в браузере по сылке http://<IP адрес вашего удаленного сервера>/, админка по ссылке http://<IP адрес вашего удаленного сервера>/admin/
+* * Ура! Наш сайт готов, и теперь вы можете опробовать его функционал в браузере по сылке:
+
+http://<IP адрес вашего удаленного сервера>/
+
+* * Админка по ссылке:
+
+ http://<IP адрес вашего удаленного сервера>/admin/
 
 ### Остановка контейнеров
 
