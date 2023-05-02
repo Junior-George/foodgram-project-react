@@ -9,4 +9,3 @@ gunicorn
 postgres
 django-contrib-postgres
 drf-base64==2.0
-reportlab
