@@ -1,7 +1,6 @@
 from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             ModelMultipleChoiceFilter)
-
-from recipes.models import Recipe, Tag, Ingredient
+from recipes.models import Recipe, Tag
 
 
 class RecipeFilter(FilterSet):
@@ -23,12 +22,12 @@ class RecipeFilter(FilterSet):
         if value:
             return queryset.filter(favorite__user=self.request.user)
         return queryset
-    
+
     def get_is_in_shopping_cart(self, queryset, name, value):
         if value:
             return queryset.filter(shopping_cart__user=self.request.user)
         return queryset
-    
+
     class Meta():
         model = Recipe
         fields = ('author', 'tags')

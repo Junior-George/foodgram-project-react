@@ -1,36 +1,31 @@
-import djoser
 import io
+
+import djoser
 from django.db.models import Sum
-from django.http import HttpResponse
+from django.db.models.expressions import Exists, OuterRef, Value
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models.aggregates import Count
+from djoser.views import UserViewSet
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from django.db.models.expressions import Value, Exists, OuterRef
-from djoser.views import UserViewSet
-from rest_framework import status, viewsets, generics
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   RetrieveModelMixin, ListModelMixin)
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
-
-from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
-                            ShoppingCart, Tag)
 from users.models import Follow, User
 
-from .filters import RecipeFilter, IngredientFilter
+from .filters import IngredientFilter, RecipeFilter
 from .pagination import SubscriptionPagination
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (CustomUserCreateSerializer, CustomUserSerializer,
-                          FavoriteSerializer, FollowListSerializer,
-                          FollowSerializer, GetRecipeSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          ShopingCartCreateSerializer, TagSerializer)
-
+                          FollowListSerializer, FollowSerializer,
+                          GetRecipeSerializer, IngredientSerializer,
+                          RecipeSerializer, ShopingCartCreateSerializer,
+                          TagSerializer)
 
 FILENAME = 'shoppingcart.pdf'
 
@@ -52,70 +47,6 @@ class UserViewSet(UserViewSet):
         queryset = User.objects.all()
         serializer = CustomUserSerializer(queryset, many=True)
         return Response(serializer.data)
-
-
-#class FollowViewSet(
-#        generics.RetrieveDestroyAPIView,
-#        generics.ListCreateAPIView):
-#    """Подписка и отписка от пользователя."""
-#    
-#    serializer_class = FollowSerializer
-#        
-#    def get_queryset(self):
-#        return self.request.user.follower.select_related(
-#            'following'
-#        ).prefetch_related(
-#            'following__recipe'
-#        )
-#
-#    def get_object(self):
-#        user_id = self.kwargs['user_id']
-#        user = get_object_or_404(User, id=user_id)
-#        self.check_object_permissions(self.request, user)
-#        return user
-#
-#    def create(self, request, *args, **kwargs):
-#        instance = self.get_object()
-#        if request.user.id == instance.id:
-#            return Response(
-#                {'errors': 'На самого себя не подписаться!'},
-#                status=status.HTTP_400_BAD_REQUEST)
-#        if request.user.follower.filter(author=instance).exists():
-#            return Response(
-#                {'errors': 'Уже подписан!'},
-#                status=status.HTTP_400_BAD_REQUEST)
-#        subs = request.user.follower.create(author=instance)
-#        serializer = self.get_serializer(subs)
-#        return Response(serializer.data, status=status.HTTP_201_CREATED)
-#
-#    def perform_destroy(self, instance):
-#        user = self.request.user
-#        author = instance
-#        if Follow.objects.filter(user=user, author=author).exists():
-#            Follow.objects.filter(user=user, author=author).delete()
-#            return Response(status=status.HTTP_204_NO_CONTENT)
-#        return Response(
-#            {"detail": "Страница не найдена"},
-#            status=status.HTTP_400_BAD_REQUEST
-#        )
-    
-
-#class FollowListViewSet(ListModelMixin,
-#                        viewsets.GenericViewSet):
-#    serializer_class = FollowListSerializer
-#    pagination_class = SubscriptionPagination
-#    queryset = User.objects.all()
-#
-#    def get_queryset(self):
-#        return User.objects.filter(following__user=self.request.user).all()
-#
-#    @action(detail=False, methods=['get'])
-#    def subscriptions(self, request):
-#        queryset = User.objects.filter(following__user=self.request.user).all()
-#        page = self.paginate_queryset(queryset)
-#        serializer = self.get_serializer_class()(page, many=True)
-#        return self.get_paginated_response(serializer.data)
-
 
 
 class FollowViewSet(UserViewSet):
@@ -152,7 +83,7 @@ class FollowViewSet(UserViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    
+
 class FollowListViewSet(UserViewSet):
     queryset = User.objects.all()
     pagination_class = SubscriptionPagination
@@ -195,7 +126,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).select_related('author').prefetch_related(
             'tags', 'ingredients', 'recipe',
             'shopping_cart', 'favorite_recipe')
-    
 
     def get_serializer_class(self):
         if self.action in ('get', 'list'):
@@ -239,40 +169,6 @@ class FavoriteViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-#class FavoriteViewSet(CreateModelMixin,
-#                      DestroyModelMixin,
-#                      viewsets.GenericViewSet):
-#    permission_classes = (IsAuthenticated, )
-#    http_method_names = ['post', 'delete']
-#    serializer_class = FavoriteSerializer
-#
-#    def get_queryset(self):
-#        recipe_id = self.kwargs.get('recipe_id')
-#        queryset = Favorite.objects.filter(
-#            pk=recipe_id
-#        )
-#        return queryset
-#
-#    def create(self, request, *args, **kwargs):
-#        recipe_id = self.kwargs.get('recipe_id')
-#        recipe = get_object_or_404(Recipe, pk=recipe_id)
-#        if request.method == 'POST':
-#            Favorite.objects.create(user=self.request.user, recipe=recipe)
-#            queryset = Recipe.objects.filter(pk=recipe_id)
-#            serializer = ShopingCartCreateSerializer(queryset, many=False)
-#            return Response(serializer.data)
-#
-#    @action(
-#            detail=False,
-#            methods=['delete'],
-#            permission_classes=[IsAuthenticated])
-#    def delete(self, request, *args, **kwargs):
-#        recipe_id = self.kwargs.get('recipe_id')
-#        recipe = get_object_or_404(Recipe, pk=recipe_id)
-#        Favorite.objects.filter(user=self.request.user, recipe=recipe).delete()
-#        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class ShoppingCartViewSet(
                          generics.DestroyAPIView,
                          generics.ListCreateAPIView):
@@ -297,43 +193,11 @@ class ShoppingCartViewSet(
     def destroy(self, request, *args, **kwargs):
         recipe_id = self.kwargs.get('recipe_id')
         recipe = get_object_or_404(Recipe, pk=recipe_id)
-        ShoppingCart.objects.filter(user=self.request.user, recipe=recipe).delete()
+        ShoppingCart.objects.filter(
+            user=self.request.user, recipe=recipe
+        ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    #def send_message(self, ingredients):
-    #    shopping_list = ''
-    #    for ingredient in ingredients:
-    #        shopping_list += (
-    #            f"\n{ingredient['ingredient__name']} "
-    #            f"{ingredient['ingredient__measurement_unit']} "
-    #            f"{ingredient['amount']}"
-    #        )
-    #    file = 'shopping_list.txt'
-    #    response = HttpResponse(shopping_list, content_type='text/plain')
-    #    response['Content-Disposition'] = f'attachment; filename="{file}"'
-    #    return response
-##
-    #@action(detail=False, methods=['get'])
-    #def download_shopping_cart(self, request):
-    #    ings = IngredientsInRecipe.objects.select_related(
-    #        'recipe', 'ingredient'
-    #    )
-    #    if request.user.is_authenticated:
-    #        ings = ings.filter(
-    #            recipe__shopping_cart__user=request.user
-    #        ).order_by("ingredient__name")
-    #    else:
-    #        ings = ings.filter(
-    #            recipe_id__in=request.session['purchases']
-    #        )
-##
-    #    ingredients = ings.values(
-    #        'ingredient__name', 'ingredient__measurement_unit'
-    #    ).annotate(
-    #        amount=Sum(int('amount'))
-    #    )
-    #    return self.send_message(ingredients)
-    
     @action(
         detail=False,
         methods=['get'],
@@ -377,47 +241,6 @@ class ShoppingCartViewSet(
         page.save()
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename=FILENAME)
-    
-
-#class DownloadShopingCart(viewsets.ReadOnlyModelViewSet):
-#    queryset = ShoppingCart.objects.all()
-#    permission_classes = (IsAuthenticated, )
-#    serializer_class = ShopingCartCreateSerializer
-#    http_method_names = ['get']
-#
-#    def send_message(self, ingredients):
-#        shopping_list = ''
-#        for ingredient in ingredients:
-#            shopping_list += (
-#                f"\n{ingredient['ingredient__name']} "
-#                f"{ingredient['ingredient__measurement_unit']} "
-#                f"{ingredient['amount']}"
-#            )
-#        file = 'shopping_list.txt'
-#        response = HttpResponse(shopping_list, content_type='text/plain')
-#        response['Content-Disposition'] = f'attachment; filename="{file}"'
-#        return response
-#
-#    #@action(detail=False, methods=['get'])
-#    def list(self, request):
-#        ings = IngredientsInRecipe.objects.select_related(
-#            'recipe', 'ingredient'
-#        )
-#        if request.user.is_authenticated:
-#            ings = ings.filter(
-#                recipe__shopping_cart__user=request.user
-#            ).order_by("ingredient__name")
-#        else:
-#            ings = ings.filter(
-#                recipe_id__in=request.session['purchases']
-#            )
-#
-#        ingredients = ings.values(
-#            'ingredient__name', 'ingredient__measurement_unit'
-#        ).annotate(
-#            amount=Sum('amount')
-#        )
-#        return self.send_message(ingredients)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

@@ -1,13 +1,13 @@
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from drf_base64.fields import Base64ImageField
+from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
+                            ShoppingCart, Tag)
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
-from drf_base64.fields import Base64ImageField
-from .utils import add_ingredients
-
-from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
-                            ShoppingCart, Tag)
 from users.models import Follow, User
+
+from .utils import add_ingredients
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -163,7 +163,7 @@ class GetRecipeSerializer(serializers.ModelSerializer):
             return False
         return model.objects.filter(user=request.user, recipe=obj).exists()
 
-    def get_is_favorited(self, obj): 
+    def get_is_favorited(self, obj):
         return self.is_object_exists(Favorite, obj)
 
     def get_is_in_shopping_cart(self, obj):
