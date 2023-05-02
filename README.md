@@ -34,7 +34,7 @@
 ### Создание образов front/back-end. Работа в локальном компьютере
 
 
-|----:|:----------|
+|----------:|:----------|
 | авторизуемся на докерхабе | docker login -u norjunior |
 | переходим в папку backend | cd backend |
 | строим образ бэкэнда | docker build -t norjunior/backend:v1 . |
