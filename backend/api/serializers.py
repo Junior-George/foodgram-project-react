@@ -2,6 +2,7 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
+from drf_base64.fields import Base64ImageField
 from .utils import add_ingredients
 
 from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
@@ -96,6 +97,9 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientInRecipeSerializer(
         many=True
     )
+    image = Base64ImageField(
+        max_length=None,
+        use_url=True)
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')
@@ -131,6 +135,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class GetRecipeSerializer(serializers.ModelSerializer):
+    image = Base64ImageField()
     is_favorited = serializers.SerializerMethodField(read_only=True)
     is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
     author = CustomUserSerializer(many=False)

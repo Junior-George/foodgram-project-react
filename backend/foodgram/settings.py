@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'recipes.apps.RecipesConfig',
     'api',
     'rest_framework',
-    'corsheaders',
     'django_filters',
     'rest_framework.authtoken',
     'djoser',
@@ -51,8 +50,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -61,11 +58,11 @@ MIDDLEWARE = [
 ]
 
 # CORS_ORIGIN_ALLOW_ALL = True
-CORS_URLS_REGEX = r'^/api/.*$'
-
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-]
+#CORS_URLS_REGEX = r'^/api/.*$'
+#
+#CORS_ALLOWED_ORIGINS = [
+#    'http://localhost:3000',
+#]
 
 ROOT_URLCONF = 'foodgram.urls'
 
@@ -92,13 +89,6 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
 DATABASES = {
-    #'default': { 
-##
-    #    'ENGINE': 'django.db.backends.sqlite3', 
-##
-    #    'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), 
-##
-    #} 
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
         'NAME': os.getenv('DB_NAME', 'postgres'),
@@ -166,6 +156,10 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+    ],
     
 }
 

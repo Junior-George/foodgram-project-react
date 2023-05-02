@@ -8,3 +8,5 @@ python-dotenv==0.21.1
 gunicorn
 postgres
 django-contrib-postgres
+drf-base64==2.0
+reportlab

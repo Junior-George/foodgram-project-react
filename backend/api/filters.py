@@ -1,7 +1,7 @@
 from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             ModelMultipleChoiceFilter)
 
-from recipes.models import Recipe, Tag
+from recipes.models import Recipe, Tag, Ingredient
 
 
 class RecipeFilter(FilterSet):
@@ -32,3 +32,7 @@ class RecipeFilter(FilterSet):
     class Meta():
         model = Recipe
         fields = ('author', 'tags')
+
+
+class IngredientFilter(FilterSet):
+    name = CharFilter(lookup_expr='istartswith')

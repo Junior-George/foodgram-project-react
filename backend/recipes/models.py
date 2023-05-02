@@ -5,7 +5,7 @@ from users.models import User
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=35, verbose_name='Ингредиент'
+        max_length=100, verbose_name='Ингредиент'
     )
     measurement_unit = models.CharField(
         max_length=10, verbose_name='Единица измерения'
@@ -68,7 +68,7 @@ class Recipe(models.Model):
         related_name='recipes', verbose_name='Автор'
     )
     image = models.ImageField(
-        upload_to='recipies/imgs/', blank=True
+        upload_to='static_back/recipes/imgs/', blank=True
     )
     ingredients = models.ManyToManyField(
         IngredientsInRecipe,
@@ -114,6 +114,9 @@ class Favorite(models.Model):
                 name="unique_favorite_recipe"
             )
         ]
+
+    def __str__(self):
+        return self.recipe.name
 
 
 class ShoppingCart(models.Model):
