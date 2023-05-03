@@ -1,10 +1,15 @@
 from django_filters import (BooleanFilter, CharFilter, FilterSet,
-                            ModelMultipleChoiceFilter)
+                            ModelMultipleChoiceFilter, NumberFilter)
 from recipes.models import Recipe, Tag
 
 
+class IngredientFilter(FilterSet):
+    name = CharFilter(lookup_expr='istartswith')
+
+
 class RecipeFilter(FilterSet):
-    author = CharFilter()
+    author = NumberFilter(
+        field_name='author__id')
     tags = ModelMultipleChoiceFilter(
         queryset=Tag.objects.all(),
         field_name='tags__slug',
@@ -19,6 +24,7 @@ class RecipeFilter(FilterSet):
     )
 
     def get_is_favorited(self, queryset, name, value):
+
         if value:
             return queryset.filter(favorite__user=self.request.user)
         return queryset
@@ -30,8 +36,4 @@ class RecipeFilter(FilterSet):
 
     class Meta():
         model = Recipe
-        fields = ('author', 'tags')
-
-
-class IngredientFilter(FilterSet):
-    name = CharFilter(lookup_expr='istartswith')
+        fields = ('author', 'tags', 'is_in_shopping_cart', 'is_favorited')

@@ -1,4 +1,4 @@
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from djoser.serializers import UserCreateSerializer
 from drf_base64.fields import Base64ImageField
 from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
                             ShoppingCart, Tag)
@@ -8,6 +8,15 @@ from rest_framework.validators import UniqueTogetherValidator
 from users.models import Follow, User
 
 from .utils import add_ingredients
+
+
+class GetIsSubscribedMixin:
+
+    def get_is_subscribed(self, obj):
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            return False
+        return user.follower.filter(author=obj).exists()
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -32,7 +41,8 @@ class CustomUserCreateSerializer(UserCreateSerializer):
         return instance
 
 
-class CustomUserSerializer(UserSerializer):
+class CustomUserSerializer(GetIsSubscribedMixin,
+                           serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -210,7 +220,7 @@ class RecipeInFollowList(serializers.ModelSerializer):
 class FollowListSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
     recipes_count = serializers.SerializerMethodField(read_only=True)
-    recipes = RecipeInFollowList(many=True)
+    recipes = serializers.SerializerMethodField()
 
     class Meta:
         fields = ('email', 'id', 'username',
@@ -219,6 +229,16 @@ class FollowListSerializer(serializers.ModelSerializer):
                   'recipes_count'
                   )
         model = User
+
+    def get_recipes(self, user):
+
+        recipes = user.recipes.all()
+        recipes = recipes[0:3]
+        return RecipeInFollowList(
+            instance=recipes,
+            many=True,
+            context=self.context
+        ).data
 
     def get_is_subscribed(self, obj):
         return Follow.objects.filter(
@@ -250,3 +270,22 @@ class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ()
         model = Favorite
+
+
+class RecipesParamsSerializer(serializers.Serializer):
+    is_favorited = serializers.ChoiceField(
+        required=False, choices=[0, 1]
+    )
+    is_in_shopping_cart = serializers.ChoiceField(
+        required=False, choices=[0, 1]
+    )
+    author = serializers.PrimaryKeyRelatedField(
+        required=False,
+        queryset=User.objects.all()
+    )
+    tags = serializers.SlugRelatedField(
+        required=False,
+        many=True,
+        queryset=Tag.objects.all(),
+        slug_field='slug'
+    )

@@ -25,7 +25,7 @@ load_dotenv()
 SECRET_KEY = 'gx2lv--xm1qaj0r!jp3gjczb*$xhk5hlal)#2s040c(pq2@k$q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['51.250.99.24', '127.0.0.1', 'localhost', 'backend']
 
@@ -58,12 +58,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS_ORIGIN_ALLOW_ALL = True
-#CORS_URLS_REGEX = r'^/api/.*$'
-#
-#CORS_ALLOWED_ORIGINS = [
-#    'http://localhost:3000',
-#]
 
 ROOT_URLCONF = 'foodgram.urls'
 
@@ -156,13 +150,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 6,
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
     ],
-    
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 6,
+
 }
 
 DJOSER = {
