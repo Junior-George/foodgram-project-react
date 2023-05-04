@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from recipes.models import (Favorite, Ingredient, IngredientsInRecipe, Recipe,
                             ShoppingCart, Tag)
-from rest_framework import generics, status, viewsets
+from rest_framework import generics, status, viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
@@ -80,6 +80,7 @@ class FollowListViewSet(UserViewSet):
     queryset = User.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly,)
     serializer_class = FollowListSerializer
+    pagination_class = SubscriptionPagination
 
     @action(detail=False, methods=['get'])
     def subscriptions(self, request):
@@ -92,8 +93,11 @@ class FollowListViewSet(UserViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = [IsOwnerOrReadOnly]
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend,
+                       filters.OrderingFilter)
     filterset_class = RecipeFilter
+    ordering = ('-id')
+    pagination_class = SubscriptionPagination
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -176,6 +180,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(author__id=context['author'])
         if context['tags']:
             queryset = queryset.filter(tags__id__in=context['tags']).distinct()
+
         return queryset
 
 
