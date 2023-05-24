@@ -1,9 +1,5 @@
 # Дипломный проект студента ЯП Нор Георгия
 
-# ip: 51.250.99.24
-# login: test@test.ru
-# pass: test
-
 ![Deploy badge](https://github.com/Junior-George/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
 ### Описание проекта
